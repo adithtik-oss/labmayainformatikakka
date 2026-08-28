@@ -1,0 +1,2172 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabMaya Informatika & KKA</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Inter & JetBrains Mono -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    }
+  </script>
+  <style>
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #020617;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #1e293b;
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #334155;
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans selection:bg-purple-500 selection:text-slate-950 min-h-screen">
+  <div id="root"></div>
+
+  <!-- Updated Babel 7 Standalone -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useRef } from 'https://esm.sh/react@18.2.0';
+    import ReactDOM from 'https://esm.sh/react-dom@18.2.0/client';
+    
+    // Firebase Cloud Firestore Imports
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, collection, doc, onSnapshot, setDoc, updateDoc, deleteDoc, getDocs } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'labmaya-kka-app';
+    const firebaseConfig = typeof __firebase_config !== 'undefined' 
+      ? JSON.parse(__firebase_config) 
+      : {
+          apiKey: "demo-api-key",
+          authDomain: "demo-app.firebaseapp.com",
+          projectId: "demo-app",
+          storageBucket: "demo-app.appspot.com",
+          messagingSenderId: "123456789",
+          appId: "1:123456789:web:demo"
+        };
+
+    let app, auth, db;
+    try {
+      app = initializeApp(firebaseConfig);
+      auth = getAuth(app);
+      db = getFirestore(app);
+    } catch (e) {
+      console.warn("Firebase initialization notice:", e);
+    }
+
+    const DEFAULT_CATEGORIES = [
+      { id: 'ai-ml', name: 'Kecerdasan Artifisial (AI)', description: 'Jaringan Saraf Tiruan, Machine Learning, & Pattern Recognition', icon: 'Brain', color: 'purple', active: true, order: 1 },
+      { id: 'koding', name: 'Koding & Algoritma', description: 'Struktur data, logika algoritma, dan pemrograman interaktif', icon: 'Code', color: 'cyan', active: true, order: 2 },
+      { id: 'siber', name: 'Keamanan Siber & Jaringan', description: 'Kriptografi, enkripsi data, dan protokol jaringan', icon: 'Shield', color: 'emerald', active: true, order: 3 },
+      { id: 'hardware', name: 'Sistem Komputer & IoT', description: 'Gerbang logika, mikrokontroler, dan arsitektur CPU', icon: 'Cpu', color: 'amber', active: true, order: 4 },
+      { id: 'data', name: 'Sains Data (Data Science)', description: 'Analisis data, pohon keputusan, dan visualisasi informasi', icon: 'BarChart', color: 'indigo', active: true, order: 5 },
+    ];
+
+    const DEFAULT_LABS = [
+      {
+        id: 'lab-1',
+        title: 'Visualisasi Jaringan Saraf Tiruan (Artificial Neural Network)',
+        category: 'ai-ml',
+        description: 'Pelajari bagaimana model AI/ML memproses input melalui bobot (weights), bias, dan fungsi aktivasi untuk menghasilkan prediksi.',
+        simKey: 'neural-net',
+        externalUrl: 'https://playground.tensorflow.org',
+        active: true,
+        featured: true,
+        order: 1,
+        difficulty: 'KKA XI',
+        duration: '20 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Jaringan Saraf Tiruan (ANN) terinspirasi oleh otak manusia. Terdiri dari Layer Input, Hidden Layer, dan Output Layer. Setiap koneksi memiliki Bobot (Weight) dan setiap neuron memiliki Bias & Fungsi Aktivasi (seperti Sigmoid atau ReLU).',
+        materiFormula: 'Output = Activation( Σ (Input_i × Weight_i) + Bias )',
+        materiSteps: [
+          'Atur nilai Input A dan Input B pada saklar kontrol.',
+          'Ubah Bobot W1, W2 dan Bias neuron menggunakan slider.',
+          'Amati perubahan hasil perkalian matriks dan sinyal aktivasi Sigmoid.',
+          'Uji apakah neuron berhasil memprediksi logika klasifikasi secara akurat.'
+        ],
+        quiz: [
+          {
+            question: 'Komponen apa dalam Neural Network yang menentukan seberapa besar pengaruh suatu input terhadap output neuron?',
+            options: ['Fungsi Aktivasi', 'Bobot (Weight)', 'Epoch', 'Learning Rate'],
+            correctAnswer: 1,
+            explanation: 'Bobot (Weight) menentukan seberapa kuat hubungan antar-neuron dan pengaruh input terhadap output.'
+          }
+        ]
+      },
+      {
+        id: 'lab-2',
+        title: 'Simulator Gerbang Logika Digital (Logic Gate Systems)',
+        category: 'hardware',
+        description: 'Rangkai dan uji logika biner 0 & 1 dengan gerbang AND, OR, XOR, NAND, NOR untuk memahami fondasi arsitektur komputer.',
+        simKey: 'logic-gate',
+        externalUrl: 'https://circuitverse.org/simulator',
+        active: true,
+        featured: true,
+        order: 2,
+        difficulty: 'Informatika X',
+        duration: '15 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Gerbang logika adalah blok pembangun dasar sistem digital yang beroperasi pada sinyal biner (HIGH/1 atau LOW/0). Kombinasi gerbang logika membentuk unit aritmetika (ALU) pada prosesor.',
+        materiFormula: 'XOR: Y = A ⊕ B  |  AND: Y = A · B  |  OR: Y = A + B',
+        materiSteps: [
+          'Pilih jenis gerbang logika (AND, OR, XOR, NAND, NOR).',
+          'Ubah nilai saklar Input A dan Input B (0 atau 1).',
+          'Amati status LED indikator Output (Menyala = 1, Mati = 0) dan Tabel Kebenaran (Truth Table).'
+        ],
+        quiz: [
+          {
+            question: 'Manakah gerbang logika yang menghasilkan Output HIGH (1) HANYA jika kedua input bernilai HIGH (1)?',
+            options: ['Gerbang OR', 'Gerbang XOR', 'Gerbang AND', 'Gerbang NOT'],
+            correctAnswer: 2,
+            explanation: 'Gerbang AND membutuhkan semua input bernilai 1 agar menghasilkan output 1.'
+          }
+        ]
+      },
+      {
+        id: 'lab-3',
+        title: 'Visualisasi Algoritma Pengurutan (Bubble Sort Visualizer)',
+        category: 'koding',
+        description: 'Amati proses kerja perbandingan dan pertukaran elemen array secara visual langkah demi langkah dalam algoritma pengurutan data.',
+        simKey: 'sorting',
+        externalUrl: 'https://visualgo.net/en/sorting',
+        active: true,
+        featured: true,
+        order: 3,
+        difficulty: 'Informatika X',
+        duration: '15 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Bubble Sort adalah algoritma pengurutan sederhana yang membandingkan dua elemen bersebelahan dan menukarnya jika urutannya salah. Kompleksitas waktunya adalah O(n²).',
+        materiFormula: 'Kompleksitas Waktu: O(n²) | Kompleksitas Ruang: O(1)',
+        materiSteps: [
+          'Klik "Acak Elemen" untuk menghasilkan array data baru.',
+          'Klik "Mulai Bubble Sort" untuk memproses pengurutan.',
+          'Perhatikan elemen berwarna kuning (yang sedang dibandingkan) dan hijau (yang sudah terurut).'
+        ],
+        quiz: [
+          {
+            question: 'Berapa kompleksitas waktu terburuk (worst-case complexity) dari algoritma Bubble Sort?',
+            options: ['O(1)', 'O(n)', 'O(n log n)', 'O(n²)'],
+            correctAnswer: 3,
+            explanation: 'Karena menggunakan dua perulangan bersarang (nested loop), Bubble Sort memiliki kompleksitas O(n²).'
+          }
+        ]
+      },
+      {
+        id: 'lab-4',
+        title: 'Laboratorium Kriptografi: Enkripsi Caesar Cipher & Hash',
+        category: 'siber',
+        description: 'Simulasi keamanan data dengan mengubah teks biasa (plaintext) menjadi cipherteks tersandi menggunakan kunci pergeseran dan kalkulasi Hash.',
+        simKey: 'crypto',
+        externalUrl: 'https://cryptii.com/',
+        active: true,
+        featured: false,
+        order: 4,
+        difficulty: 'Informatika XI',
+        duration: '20 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Kriptografi adalah ilmu menjaga kerahasiaan pesan. Caesar Cipher merupakan teknik enkripsi substitusi klasik dengan menggeser huruf pada alfabet sesuai nilai Shift Key (Kunci).',
+        materiFormula: 'Enkripsi: E_k(x) = (x + k) mod 26',
+        materiSteps: [
+          'Ketikkan teks pesan rahasia (Plaintext).',
+          'Geser slider Kunci Enkripsi (Shift Key) dari 1 hingga 25.',
+          'Amati hasil transformasi Ciphertext serta nilai checksum hash biner secara real-time.'
+        ],
+        quiz: [
+          {
+            question: 'Jika pesan "KKA" dienkripsi dengan Caesar Cipher shift = 3, apakah pesan tersandinya?',
+            options: ['LKB', 'NDD', 'NND', 'KKA'],
+            correctAnswer: 2,
+            explanation: 'K (+3) -> N, K (+3) -> N, A (+3) -> D, sehingga menjadi NND.'
+          }
+        ]
+      },
+      {
+        id: 'lab-5',
+        title: 'Model AI Pohon Keputusan (Decision Tree Classification)',
+        category: 'data',
+        description: 'Eksplorasi cara algoritma Machine Learning mengambil keputusan berdasarkan percabangan kriteria fitur data.',
+        simKey: 'decision-tree',
+        externalUrl: 'https://teachablemachine.withgoogle.com/',
+        active: true,
+        featured: false,
+        order: 5,
+        difficulty: 'KKA X',
+        duration: '20 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Decision Tree adalah metode supervisi pembelajaran mesin yang membagi data menjadi beberapa cabang aturan IF-THEN berdasarkan atribut data terbaik (Entropy/Gini Index).',
+        materiFormula: 'Entropy(S) = - ∑ p_i log₂(p_i)',
+        materiSteps: [
+          'Pilih atribut parameter input (Suhu, Kelembaban, Angin).',
+          'Telusuri alur simpul (Node) dari Root hingga Leaf Node.',
+          'Lihat keputusan prediksi AI: "Bermain" atau "Batal".'
+        ],
+        quiz: [
+          {
+            question: 'Simpul paling bawah dalam pohon keputusan yang berisi hasil prediksi akhir dinamakan...',
+            options: ['Root Node', 'Internal Node', 'Leaf Node (Daun)', 'Branch'],
+            correctAnswer: 2,
+            explanation: 'Leaf Node adalah simpul terminal tempat hasil keputusan atau label kelas berada.'
+          }
+        ]
+      },
+      {
+        id: 'lab-6',
+        title: 'Simulasi Logika Pemrograman: Percabangan & Perulangan',
+        category: 'koding',
+        description: 'Visualisasikan eksekusi perintah baris kode program (FOR Loops & IF-ELSE Conditionals) secara interaktif step-by-step.',
+        simKey: 'code-logic',
+        externalUrl: 'https://trinket.io/python',
+        active: true,
+        featured: false,
+        order: 6,
+        difficulty: 'Informatika X',
+        duration: '15 Min',
+        thumbnail: 'https://images.unsplash.com/photo-1542831371-29b0f74f9713?auto=format&fit=crop&w=600&q=80',
+        materiText: 'Struktur kontrol pemrograman menentukan alur eksekusi program. Percabangan (IF-ELSE) mengevaluasi kondisi boolean, sedangkan Perulangan (FOR/WHILE) mengulang instruksi.',
+        materiFormula: 'for i in range(count): if (i % 2 == 0) ...',
+        materiSteps: [
+          'Atur batas perulangan (Iterasi Count).',
+          'Pilih kriteria filter logika percabangan (Ganjil / Genap).',
+          'Klik tombol "Jalankan Kode" dan perhatikan konsol output variabel i.'
+        ],
+        quiz: [
+          {
+            question: 'Struktur mana yang digunakan untuk mengeksekusi blok kode berulang kali selama kondisi terpenuhi?',
+            options: ['IF-ELSE', 'Loop (Perulangan)', 'Function', 'Variable'],
+            correctAnswer: 1,
+            explanation: 'Perulangan (Loop) berfungsi mengulang baris kode tertentu hingga batas/kondisi henti tercapai.'
+          }
+        ]
+      }
+    ];
+
+    const Icon = ({ name, className = "w-5 h-5" }) => {
+      switch (name) {
+        case 'Brain':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+          );
+        case 'Code':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          );
+        case 'Shield':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
+          );
+        case 'Cpu':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="4" y="4" width="16" height="16" rx="2" strokeWidth={2} />
+              <rect x="9" y="9" width="6" height="6" strokeWidth={2} />
+              <path strokeLinecap="round" strokeWidth={2} d="M9 1v3M15 1v3M9 20v3M15 20v3M1 9h3M1 15h3M20 9h3M20 15h3" />
+            </svg>
+          );
+        case 'BarChart':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          );
+        case 'Play':
+          return (
+            <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          );
+        case 'BookOpen':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+            </svg>
+          );
+        case 'Star':
+          return (
+            <svg className={className} fill="currentColor" viewBox="0 0 24 24">
+              <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+            </svg>
+          );
+        case 'Search':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          );
+        case 'Plus':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+          );
+        case 'Edit':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+            </svg>
+          );
+        case 'Trash':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          );
+        case 'RefreshCw':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          );
+        case 'X':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          );
+        case 'Lock':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <rect x="5" y="11" width="14" height="10" rx="2" strokeWidth={2} />
+              <path strokeLinecap="round" strokeWidth={2} d="M8 11V7a4 4 0 118 0v4" />
+            </svg>
+          );
+        case 'LogOut':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          );
+        case 'HelpCircle':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="9" strokeWidth={2} />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3" />
+              <line x1="12" y1="17" x2="12.01" y2="17" strokeWidth={3} />
+            </svg>
+          );
+        case 'ExternalLink':
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+            </svg>
+          );
+        default:
+          return (
+            <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <circle cx="12" cy="12" r="9" strokeWidth={2}/>
+            </svg>
+          );
+      }
+    };
+
+    const NeuralNetSimulation = () => {
+      const [inputA, setInputA] = useState(1);
+      const [inputB, setInputB] = useState(0);
+      const [weight1, setWeight1] = useState(0.8);
+      const [weight2, setWeight2] = useState(-0.5);
+      const [bias, setBias] = useState(0.2);
+
+      const weightedSum = inputA * weight1 + inputB * weight2 + bias;
+      const sigmoid = (x) => 1 / (1 + Math.exp(-x));
+      const output = sigmoid(weightedSum);
+      const predictionClass = output >= 0.5 ? 1 : 0;
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center w-full md:w-80 h-72 relative shadow-inner overflow-hidden">
+            <svg className="w-full h-full" viewBox="0 0 300 200">
+              <line x1="60" y1="60" x2="150" y2="100" stroke={weight1 >= 0 ? "#22d3ee" : "#f43f5e"} strokeWidth={Math.abs(weight1) * 4 + 1} />
+              <line x1="60" y1="140" x2="150" y2="100" stroke={weight2 >= 0 ? "#22d3ee" : "#f43f5e"} strokeWidth={Math.abs(weight2) * 4 + 1} />
+              <line x1="150" y1="100" x2="240" y2="100" stroke="#a855f7" strokeWidth="3" />
+
+              <circle cx="60" cy="60" r="18" fill={inputA ? "#06b6d4" : "#1e293b"} stroke="#22d3ee" strokeWidth="2" />
+              <text x="60" y="64" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="bold">x1={inputA}</text>
+
+              <circle cx="60" cy="140" r="18" fill={inputB ? "#06b6d4" : "#1e293b"} stroke="#22d3ee" strokeWidth="2" />
+              <text x="60" y="144" textAnchor="middle" fill="#fff" fontSize="12" fontWeight="bold">x2={inputB}</text>
+
+              <text x="95" y="70" fill="#a5f3fc" fontSize="10" fontFamily="monospace">w1={weight1}</text>
+              <text x="95" y="145" fill="#a5f3fc" fontSize="10" fontFamily="monospace">w2={weight2}</text>
+
+              <circle cx="150" cy="100" r="22" fill="#581c87" stroke="#c084fc" strokeWidth="2" />
+              <text x="150" y="98" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="bold">Σ + b</text>
+              <text x="150" y="110" textAnchor="middle" fill="#e9d5ff" fontSize="9">{weightedSum.toFixed(2)}</text>
+
+              <circle cx="240" cy="100" r="20" fill={predictionClass ? "#16a34a" : "#dc2626"} stroke="#fff" strokeWidth="2" />
+              <text x="240" y="104" textAnchor="middle" fill="#fff" fontSize="13" fontWeight="bold">{predictionClass}</text>
+            </svg>
+
+            <div className="absolute bottom-2 text-[11px] font-mono text-purple-300">
+              Aktivasi Sigmoid: σ(z) = <span className="text-emerald-400 font-bold">{(output * 100).toFixed(1)}%</span>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setInputA(inputA === 1 ? 0 : 1)}
+                className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${inputA ? 'bg-cyan-950 border-cyan-400 text-cyan-200' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+              >
+                Input A (x1): {inputA}
+              </button>
+              <button
+                onClick={() => setInputB(inputB === 1 ? 0 : 1)}
+                className={`flex-1 py-2 rounded-lg font-mono text-xs font-bold border transition-all ${inputB ? 'bg-cyan-950 border-cyan-400 text-cyan-200' : 'bg-slate-900 border-slate-700 text-slate-400'}`}
+              >
+                Input B (x2): {inputB}
+              </button>
+            </div>
+
+            <div>
+              <label className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+                <span>Bobot W1 (Koneksi x1):</span>
+                <span className="text-cyan-400">{weight1}</span>
+              </label>
+              <input
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value={weight1}
+                onChange={(e) => setWeight1(parseFloat(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+                <span>Bobot W2 (Koneksi x2):</span>
+                <span className="text-cyan-400">{weight2}</span>
+              </label>
+              <input
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value={weight2}
+                onChange={(e) => setWeight2(parseFloat(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+                <span>Bias Neuron (b):</span>
+                <span className="text-purple-400">{bias}</span>
+              </label>
+              <input
+                type="range"
+                min="-2"
+                max="2"
+                step="0.1"
+                value={bias}
+                onChange={(e) => setBias(parseFloat(e.target.value))}
+                className="w-full accent-purple-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs space-y-1 font-mono">
+              <div className="text-slate-300 font-bold">Kalkulasi Matematika AI:</div>
+              <div className="text-slate-400">z = ({inputA} × {weight1}) + ({inputB} × {weight2}) + ({bias}) = <span className="text-purple-300">{weightedSum.toFixed(2)}</span></div>
+              <div className="text-slate-400">Hasil Prediksi Kelas: <span className="text-emerald-400 font-bold">{predictionClass}</span> (Konfidensi {(output * 100).toFixed(1)}%)</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const LogicGateSimulation = () => {
+      const [gateType, setGateType] = useState('AND');
+      const [inA, setInA] = useState(true);
+      const [inB, setInB] = useState(false);
+
+      const calculateOutput = (a, b, gate) => {
+        switch (gate) {
+          case 'AND': return a && b;
+          case 'OR': return a || b;
+          case 'XOR': return a !== b;
+          case 'NAND': return !(a && b);
+          case 'NOR': return !(a || b);
+          default: return false;
+        }
+      };
+
+      const outVal = calculateOutput(inA, inB, gateType);
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col items-center justify-between w-full md:w-80 h-72 relative shadow-inner">
+            <div className="w-full flex justify-between items-center text-xs font-mono text-slate-400 border-b border-slate-800 pb-2">
+              <span>LOGIC SIMULATOR</span>
+              <span className="text-amber-400 font-bold">GERBANG {gateType}</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-6 my-auto w-full">
+              <div className="flex flex-col gap-6">
+                <button
+                  onClick={() => setInA(!inA)}
+                  className={`w-12 h-10 rounded border text-xs font-mono font-bold transition-all ${inA ? 'bg-cyan-500 border-white text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
+                >
+                  A: {inA ? 1 : 0}
+                </button>
+                <button
+                  onClick={() => setInB(!inB)}
+                  className={`w-12 h-10 rounded border text-xs font-mono font-bold transition-all ${inB ? 'bg-cyan-500 border-white text-slate-950 shadow-[0_0_12px_rgba(34,211,238,0.6)]' : 'bg-slate-900 border-slate-700 text-slate-500'}`}
+                >
+                  B: {inB ? 1 : 0}
+                </button>
+              </div>
+
+              <div className="w-24 h-20 bg-slate-900 border-2 border-amber-500 rounded-r-3xl flex items-center justify-center font-black font-mono text-lg text-amber-400 shadow-lg">
+                {gateType}
+              </div>
+
+              <div className="flex flex-col items-center gap-1">
+                <div
+                  className={`w-12 h-12 rounded-full border-2 transition-all duration-300 flex items-center justify-center font-mono font-bold text-sm ${
+                    outVal
+                      ? 'bg-emerald-500 border-white text-slate-950 shadow-[0_0_20px_rgba(16,185,129,0.8)]'
+                      : 'bg-slate-900 border-slate-700 text-slate-600'
+                  }`}
+                >
+                  {outVal ? 1 : 0}
+                </div>
+                <span className="text-[10px] font-mono text-slate-400">LED OUT</span>
+              </div>
+            </div>
+
+            <div className="text-[11px] font-mono text-cyan-300">
+              Status Output: <span className={outVal ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold'}>{outVal ? 'HIGH (1)' : 'LOW (0)'}</span>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div>
+              <label className="block text-slate-300 font-medium mb-2 text-xs">Pilih Tipe Gerbang Logika:</label>
+              <div className="grid grid-cols-5 gap-1.5 font-mono text-xs">
+                {['AND', 'OR', 'XOR', 'NAND', 'NOR'].map((g) => (
+                  <button
+                    key={g}
+                    onClick={() => setGateType(g)}
+                    className={`py-2 rounded border font-bold transition-all ${
+                      gateType === g ? 'bg-amber-500 border-white text-slate-950 shadow-md' : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    {g}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 text-xs font-mono">
+              <div className="font-bold text-slate-200 mb-2">Tabel Kebenaran ({gateType}):</div>
+              <div className="grid grid-cols-3 text-center text-slate-400 border-b border-slate-800 pb-1 font-bold">
+                <span>A</span><span>B</span><span>Output</span>
+              </div>
+              {[
+                [0, 0], [0, 1], [1, 0], [1, 1]
+              ].map(([a, b], idx) => {
+                const res = calculateOutput(Boolean(a), Boolean(b), gateType);
+                const isCurrent = Boolean(a) === inA && Boolean(b) === inB;
+                return (
+                  <div
+                    key={idx}
+                    className={`grid grid-cols-3 text-center py-1 transition-colors ${
+                      isCurrent ? 'bg-amber-500/20 text-amber-300 font-bold rounded' : 'text-slate-300'
+                    }`}
+                  >
+                    <span>{a}</span><span>{b}</span><span className={res ? 'text-emerald-400 font-bold' : 'text-rose-400'}>{res ? 1 : 0}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const SortingSimulation = () => {
+      const [array, setArray] = useState([45, 20, 75, 32, 90, 15, 60, 50]);
+      const [activeIndices, setActiveIndices] = useState([]);
+      const [sortedIndices, setSortedIndices] = useState([]);
+      const [isSorting, setIsSorting] = useState(false);
+
+      const generateRandomArray = () => {
+        if (isSorting) return;
+        const newArr = Array.from({ length: 8 }, () => Math.floor(Math.random() * 85) + 10);
+        setArray(newArr);
+        setActiveIndices([]);
+        setSortedIndices([]);
+      };
+
+      const startBubbleSort = async () => {
+        if (isSorting) return;
+        setIsSorting(true);
+        const arr = [...array];
+        const n = arr.length;
+        const sorted = [];
+
+        for (let i = 0; i < n; i++) {
+          for (let j = 0; j < n - i - 1; j++) {
+            setActiveIndices([j, j + 1]);
+            await new Promise((resolve) => setTimeout(resolve, 350));
+
+            if (arr[j] > arr[j + 1]) {
+              const temp = arr[j];
+              arr[j] = arr[j + 1];
+              arr[j + 1] = temp;
+              setArray([...arr]);
+            }
+          }
+          sorted.push(n - i - 1);
+          setSortedIndices([...sorted]);
+        }
+        setActiveIndices([]);
+        setIsSorting(false);
+      };
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex items-end justify-center gap-2 w-full md:w-80 h-72 relative shadow-inner">
+            {array.map((val, idx) => {
+              const isActive = activeIndices.includes(idx);
+              const isSorted = sortedIndices.includes(idx);
+
+              return (
+                <div key={idx} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[10px] font-mono text-slate-400">{val}</span>
+                  <div
+                    className={`w-full rounded-t transition-all duration-300 ${
+                      isActive
+                        ? 'bg-amber-400 shadow-[0_0_12px_rgba(251,191,36,0.8)]'
+                        : isSorted
+                        ? 'bg-emerald-500'
+                        : 'bg-cyan-600'
+                    }`}
+                    style={{ height: `${val * 1.8}px` }}
+                  />
+                </div>
+              );
+            })}
+            <div className="absolute top-3 left-4 text-[11px] font-mono text-slate-400">
+              Visualisasi Array (N={array.length})
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div className="p-4 bg-slate-900 border border-slate-800 rounded-lg space-y-2">
+              <div className="text-xs font-bold text-slate-200">Indikator Warna:</div>
+              <div className="flex flex-wrap gap-3 text-xs">
+                <span className="flex items-center gap-1.5 text-cyan-300"><span className="w-3 h-3 rounded bg-cyan-600" /> Belum Terurut</span>
+                <span className="flex items-center gap-1.5 text-amber-300"><span className="w-3 h-3 rounded bg-amber-400" /> Sedang Membandingkan</span>
+                <span className="flex items-center gap-1.5 text-emerald-300"><span className="w-3 h-3 rounded bg-emerald-500" /> Selesai Terurut</span>
+              </div>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                disabled={isSorting}
+                onClick={startBubbleSort}
+                className="flex-1 py-2.5 px-4 bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2"
+              >
+                <Icon name="Play" className="w-4 h-4" />
+                {isSorting ? 'Mengurutkan...' : 'Mulai Bubble Sort'}
+              </button>
+              <button
+                disabled={isSorting}
+                onClick={generateRandomArray}
+                className="py-2.5 px-4 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-300 rounded-lg border border-slate-700"
+              >
+                <Icon name="RefreshCw" className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const CryptographySimulation = () => {
+      const [plaintext, setPlaintext] = useState('INFORMATIKA');
+      const [shiftKey, setShiftKey] = useState(3);
+
+      const encryptCaesar = (text, shift) => {
+        return text
+          .toUpperCase()
+          .split('')
+          .map((char) => {
+            const code = char.charCodeAt(0);
+            if (code >= 65 && code <= 90) {
+              return String.fromCharCode(((code - 65 + shift) % 26) + 65);
+            }
+            return char;
+          })
+          .join('');
+      };
+
+      const ciphertext = encryptCaesar(plaintext, shiftKey);
+
+      const simpleHash = (text) => {
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = (hash << 5) - hash + text.charCodeAt(i);
+          hash |= 0;
+        }
+        return Math.abs(hash).toString(16).padStart(8, '0').toUpperCase();
+      };
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col justify-between w-full md:w-80 h-72 shadow-inner font-mono text-xs">
+            <div className="text-slate-400 border-b border-slate-800 pb-2 flex justify-between">
+              <span>CIPHER CONSOLE</span>
+              <span className="text-emerald-400">SHIFT +{shiftKey}</span>
+            </div>
+
+            <div className="space-y-3 my-auto">
+              <div>
+                <span className="text-slate-500 block text-[10px]">PLAINTEXT:</span>
+                <div className="p-2 bg-slate-900 border border-slate-800 rounded text-cyan-300 font-bold truncate">
+                  {plaintext || '(Kosong)'}
+                </div>
+              </div>
+
+              <div className="text-center text-amber-400">↓ ENKRIPSI CAESAR ↓</div>
+
+              <div>
+                <span className="text-slate-500 block text-[10px]">CIPHERTEXT:</span>
+                <div className="p-2 bg-slate-900 border border-emerald-500/50 rounded text-emerald-400 font-bold truncate">
+                  {ciphertext}
+                </div>
+              </div>
+            </div>
+
+            <div className="text-[10px] text-purple-300 border-t border-slate-800 pt-2 flex justify-between">
+              <span>CHECKSUM HASH:</span>
+              <span className="font-bold">{simpleHash(ciphertext)}</span>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1 text-xs">Pesan Teks Biasa (Plaintext):</label>
+              <input
+                type="text"
+                value={plaintext}
+                onChange={(e) => setPlaintext(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-cyan-500"
+                placeholder="Masukkan huruf A-Z..."
+              />
+            </div>
+
+            <div>
+              <label className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+                <span>Kunci Pergeseran (Shift Key):</span>
+                <span className="text-cyan-400 font-bold">+{shiftKey} Pergeseran</span>
+              </label>
+              <input
+                type="range"
+                min="1"
+                max="25"
+                value={shiftKey}
+                onChange={(e) => setShiftKey(parseInt(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs space-y-1 font-mono text-slate-300">
+              <div className="font-bold text-white mb-1">Visualisasi Pergeseran Alfabet:</div>
+              <div className="text-cyan-400">A B C D E F G H I J K L M...</div>
+              <div className="text-emerald-400">↓ ({shiftKey} langkah)</div>
+              <div className="text-emerald-300">{encryptCaesar('ABCDEFGHIJKLM', shiftKey)}...</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const DecisionTreeSimulation = () => {
+      const [weather, setWeather] = useState('Cerah');
+      const [humidity, setHumidity] = useState('Normal');
+
+      const getDecision = () => {
+        if (weather === 'Hujan') return { result: 'TIDAK BERMAIN ⚽', color: 'text-rose-400' };
+        if (humidity === 'Tinggi') return { result: 'TIDAK BERMAIN ⚽', color: 'text-rose-400' };
+        return { result: 'BOLEH BERMAIN ⚽', color: 'text-emerald-400' };
+      };
+
+      const decision = getDecision();
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 flex flex-col items-center justify-center w-full md:w-80 h-72 relative shadow-inner overflow-hidden">
+            <div className="flex flex-col items-center gap-4 text-xs font-mono">
+              <div className="p-2 bg-purple-950 border border-purple-500 rounded text-purple-200 font-bold">
+                Root: Cuaca Hari Ini?
+              </div>
+              <div className="flex gap-8">
+                <div className={`p-2 rounded border text-center ${weather === 'Cerah' ? 'bg-cyan-950 border-cyan-400 text-cyan-200 font-bold ring-2 ring-cyan-400' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
+                  Cerah → Cek Kelembaban
+                </div>
+                <div className={`p-2 rounded border text-center ${weather === 'Hujan' ? 'bg-rose-950 border-rose-400 text-rose-200 font-bold ring-2 ring-rose-400' : 'bg-slate-900 border-slate-800 text-slate-500'}`}>
+                  Hujan → Batal
+                </div>
+              </div>
+              <div className={`p-3 rounded-lg border font-bold text-center ${decision.color} bg-slate-900 border-slate-700 shadow-lg mt-2`}>
+                LEAF RESULT: {decision.result}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div>
+              <label className="block text-slate-300 font-medium mb-1 text-xs">Fitur 1: Cuaca</label>
+              <div className="flex gap-2 font-mono text-xs">
+                <button
+                  onClick={() => setWeather('Cerah')}
+                  className={`flex-1 py-2 rounded border font-bold ${weather === 'Cerah' ? 'bg-cyan-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                >
+                  ☀️ Cerah
+                </button>
+                <button
+                  onClick={() => setWeather('Hujan')}
+                  className={`flex-1 py-2 rounded border font-bold ${weather === 'Hujan' ? 'bg-cyan-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                >
+                  🌧️ Hujan
+                </button>
+              </div>
+            </div>
+
+            {weather === 'Cerah' && (
+              <div>
+                <label className="block text-slate-300 font-medium mb-1 text-xs">Fitur 2: Kelembaban Udara</label>
+                <div className="flex gap-2 font-mono text-xs">
+                  <button
+                    onClick={() => setHumidity('Normal')}
+                    className={`flex-1 py-2 rounded border font-bold ${humidity === 'Normal' ? 'bg-emerald-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                  >
+                    🍃 Normal
+                  </button>
+                  <button
+                    onClick={() => setHumidity('Tinggi')}
+                    className={`flex-1 py-2 rounded border font-bold ${humidity === 'Tinggi' ? 'bg-rose-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                  >
+                    💦 Tinggi
+                  </button>
+                </div>
+              </div>
+            )}
+
+            <div className="p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs font-mono space-y-1">
+              <div className="font-bold text-slate-200">Hasil Prediksi Model AI:</div>
+              <div className="text-slate-400">Atribut: Cuaca={weather}, Kelembaban={humidity}</div>
+              <div className="text-cyan-300 font-bold">Keputusan: {decision.result}</div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const CodeLogicSimulation = () => {
+      const [iterations, setIterations] = useState(5);
+      const [filterEven, setFilterEven] = useState(true);
+      const [outputLogs, setOutputLogs] = useState([]);
+      const [isRunning, setIsRunning] = useState(false);
+
+      const runCodeLogic = async () => {
+        if (isRunning) return;
+        setIsRunning(true);
+        setOutputLogs([]);
+        const logs = [];
+
+        for (let i = 1; i <= iterations; i++) {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          const isEven = i % 2 === 0;
+
+          if (filterEven && isEven) {
+            logs.push(`Iterasi ${i}: Bilangan GENAP ditemukan (${i})`);
+          } else if (!filterEven && !isEven) {
+            logs.push(`Iterasi ${i}: Bilangan GANJIL ditemukan (${i})`);
+          } else {
+            logs.push(`Iterasi ${i}: Dilewati (Kondisi false)`);
+          }
+          setOutputLogs([...logs]);
+        }
+        setIsRunning(false);
+      };
+
+      return (
+        <div className="flex flex-col md:flex-row gap-6 items-center">
+          <div className="bg-slate-950 border border-slate-800 rounded-xl p-4 flex flex-col justify-between w-full md:w-80 h-72 font-mono text-xs shadow-inner">
+            <div className="text-slate-400 border-b border-slate-800 pb-1 flex justify-between text-[10px]">
+              <span>PYTHON RUNNER</span>
+              <span className="text-cyan-400">main.py</span>
+            </div>
+
+            <div className="bg-slate-900 p-2.5 rounded border border-slate-800 text-slate-300 space-y-1 text-[11px] overflow-x-auto">
+              <div><span className="text-purple-400">for</span> i <span className="text-purple-400">in</span> range(1, {iterations + 1}):</div>
+              <div className="pl-4"><span className="text-amber-400">if</span> i % 2 == {filterEven ? 0 : 1}:</div>
+              <div className="pl-8 text-emerald-400">print(f"Iterasi &#123;i&#125;")</div>
+            </div>
+
+            <div className="bg-slate-900/80 p-2.5 rounded border border-slate-800 h-28 overflow-y-auto space-y-1 text-[10px]">
+              <span className="text-slate-500 block">-- OUTPUT KONSOL --</span>
+              {outputLogs.map((log, idx) => (
+                <div key={idx} className={log.includes('ditemukan') ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+                  {log}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex-1 w-full space-y-4 text-sm">
+            <div>
+              <label className="flex justify-between text-xs text-slate-300 mb-1 font-mono">
+                <span>Jumlah Iterasi Perulangan (FOR):</span>
+                <span className="text-cyan-400 font-bold">{iterations} Kali</span>
+              </label>
+              <input
+                type="range"
+                min="3"
+                max="10"
+                value={iterations}
+                onChange={(e) => setIterations(parseInt(e.target.value))}
+                className="w-full accent-cyan-500 cursor-pointer"
+              />
+            </div>
+
+            <div>
+              <label className="block text-slate-300 font-medium mb-1 text-xs">Filter Percabangan IF-ELSE:</label>
+              <div className="flex gap-2 font-mono text-xs">
+                <button
+                  onClick={() => setFilterEven(true)}
+                  className={`flex-1 py-2 rounded border font-bold ${filterEven ? 'bg-cyan-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                >
+                  Filter Genap (i % 2 == 0)
+                </button>
+                <button
+                  onClick={() => setFilterEven(false)}
+                  className={`flex-1 py-2 rounded border font-bold ${!filterEven ? 'bg-cyan-600 text-white border-white' : 'bg-slate-900 border-slate-800 text-slate-400'}`}
+                >
+                  Filter Ganjil (i % 2 != 0)
+                </button>
+              </div>
+            </div>
+
+            <button
+              disabled={isRunning}
+              onClick={runCodeLogic}
+              className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-semibold rounded-lg shadow-lg flex items-center justify-center gap-2"
+            >
+              <Icon name="Play" className="w-4 h-4" />
+              {isRunning ? 'Eksekusi Program...' : 'Jalankan Simulasi Logika Kode'}
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    const ToastContainer = ({ toasts, onClose }) => {
+      return (
+        <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+          {toasts.map((toast) => (
+            <div
+              key={toast.id}
+              className={`pointer-events-auto p-4 rounded-xl border shadow-2xl flex items-center justify-between text-sm transition-all transform ${
+                toast.type === 'success'
+                  ? 'bg-emerald-950/90 border-emerald-500 text-emerald-200'
+                  : toast.type === 'error'
+                  ? 'bg-rose-950/90 border-rose-500 text-rose-200'
+                  : 'bg-cyan-950/90 border-cyan-500 text-cyan-200'
+              }`}
+            >
+              <span>{toast.text}</span>
+              <button onClick={() => onClose(toast.id)} className="ml-3 text-slate-400 hover:text-white">
+                <Icon name="X" className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      );
+    };
+
+    const SimulationModal = ({ lab, onClose }) => {
+      const [activeTab, setActiveTab] = useState('sim');
+      const [selectedQuizAnswer, setSelectedQuizAnswer] = useState(null);
+      const [quizSubmitted, setQuizSubmitted] = useState(false);
+
+      const renderSim = () => {
+        switch (lab.simKey) {
+          case 'neural-net':
+            return <NeuralNetSimulation />;
+          case 'logic-gate':
+            return <LogicGateSimulation />;
+          case 'sorting':
+            return <SortingSimulation />;
+          case 'crypto':
+            return <CryptographySimulation />;
+          case 'decision-tree':
+            return <DecisionTreeSimulation />;
+          case 'code-logic':
+            return <CodeLogicSimulation />;
+          case 'none':
+          default:
+            return (
+              <div className="p-8 text-center text-slate-400 space-y-3">
+                <div className="text-4xl">🔬</div>
+                <p className="font-medium text-slate-300">Modul ini tidak menggunakan simulasi internal.</p>
+                {lab.externalUrl && (
+                  <p className="text-xs text-slate-400">
+                    Silakan gunakan tombol <span className="text-purple-400 font-bold">"Buka Link Luar ↗"</span> di atas untuk mengakses praktikum eksternal.
+                  </p>
+                )}
+              </div>
+            );
+        }
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+            {/* Header */}
+            <div className="p-4 md:p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+              <div>
+                <span className="text-xs uppercase font-mono tracking-wider px-2.5 py-1 rounded-full bg-purple-950 text-purple-400 border border-purple-800">
+                  {lab.category} • {(lab && lab.difficulty) ? lab.difficulty : 'Informatika X'}
+                </span>
+                <h3 className="text-lg md:text-xl font-bold text-white mt-1">{lab.title}</h3>
+              </div>
+              <div className="flex items-center gap-2">
+                {lab.externalUrl && (
+                  <a
+                    href={lab.externalUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-3 py-1.5 rounded-lg bg-purple-600 hover:bg-purple-500 text-white text-xs font-semibold flex items-center gap-1.5 transition-all shadow-md"
+                  >
+                    <Icon name="ExternalLink" className="w-3.5 h-3.5" /> Buka Link Luar ↗
+                  </a>
+                )}
+                <button
+                  onClick={onClose}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                >
+                  <Icon name="X" className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+
+            {/* Navigation Tabs */}
+            <div className="flex border-b border-slate-800 bg-slate-900/50 px-6 gap-6 text-sm font-medium">
+              <button
+                onClick={() => setActiveTab('sim')}
+                className={`py-3 border-b-2 transition-all flex items-center gap-2 ${
+                  activeTab === 'sim' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Icon name="Play" className="w-4 h-4" /> Simulasi Interaktif
+              </button>
+              <button
+                onClick={() => setActiveTab('materi')}
+                className={`py-3 border-b-2 transition-all flex items-center gap-2 ${
+                  activeTab === 'materi' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
+                }`}
+              >
+                <Icon name="BookOpen" className="w-4 h-4" /> Teori Pembelajaran
+              </button>
+              {lab.quiz && lab.quiz.length > 0 && (
+                <button
+                  onClick={() => setActiveTab('quiz')}
+                  className={`py-3 border-b-2 transition-all flex items-center gap-2 ${
+                    activeTab === 'quiz' ? 'border-cyan-400 text-cyan-400 font-bold' : 'border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  <Icon name="HelpCircle" className="w-4 h-4" /> Kuis Pemahaman
+                </button>
+              )}
+            </div>
+
+            {/* Content Body */}
+            <div className="p-6 overflow-y-auto flex-1">
+              {activeTab === 'sim' && renderSim()}
+
+              {activeTab === 'materi' && (
+                <div className="space-y-4 text-slate-300 text-sm">
+                  <p className="leading-relaxed">{lab.materiText}</p>
+                  {lab.materiFormula && (
+                    <div className="p-4 bg-slate-950 border border-slate-800 rounded-xl font-mono text-cyan-300 font-bold text-center text-lg">
+                      {lab.materiFormula}
+                    </div>
+                  )}
+                  {lab.materiSteps && (
+                    <div className="space-y-2">
+                      <h5 className="font-bold text-white">Panduan Praktikum Interaktif:</h5>
+                      <ol className="list-decimal list-inside space-y-1 text-slate-300">
+                        {lab.materiSteps.map((step, idx) => (
+                          <li key={idx}>{step}</li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {activeTab === 'quiz' && lab.quiz && (
+                <div className="space-y-4">
+                  {lab.quiz.map((q, idx) => (
+                    <div key={idx} className="p-4 bg-slate-950 border border-slate-800 rounded-xl space-y-3">
+                      <p className="font-semibold text-white">{q.question}</p>
+                      <div className="space-y-2">
+                        {q.options.map((opt, oIdx) => (
+                          <button
+                            key={oIdx}
+                            disabled={quizSubmitted}
+                            onClick={() => setSelectedQuizAnswer(oIdx)}
+                            className={`w-full text-left p-3 rounded-lg border text-sm transition-all ${
+                              selectedQuizAnswer === oIdx
+                                ? 'bg-cyan-950 border-cyan-400 text-cyan-200 font-medium'
+                                : 'bg-slate-900 border-slate-800 text-slate-300 hover:bg-slate-850'
+                            }`}
+                          >
+                            {opt}
+                          </button>
+                        ))}
+                      </div>
+
+                      {!quizSubmitted ? (
+                        <button
+                          disabled={selectedQuizAnswer === null}
+                          onClick={() => setQuizSubmitted(true)}
+                          className="mt-3 px-4 py-2 bg-cyan-600 hover:bg-cyan-500 disabled:bg-slate-800 text-white text-xs font-semibold rounded-lg"
+                        >
+                          Periksa Jawaban
+                        </button>
+                      ) : (
+                        <div className="mt-3 p-3 rounded-lg bg-slate-900 border border-slate-800 text-xs">
+                          {selectedQuizAnswer === q.correctAnswer ? (
+                            <span className="text-emerald-400 font-bold">✨ Jawaban Anda Benar! </span>
+                          ) : (
+                            <span className="text-rose-400 font-bold">❌ Masih Kurang Tepat. </span>
+                          )}
+                          <p className="text-slate-300 mt-1">{q.explanation}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const LabFormModal = ({ lab, categories, onSave, onClose }) => {
+      const defaultCategory = (categories && categories[0] && categories[0].id) ? categories[0].id : 'ai-ml';
+
+      const [formData, setFormData] = useState({
+        title: (lab && lab.title) ? lab.title : '',
+        category: (lab && lab.category) ? lab.category : defaultCategory,
+        description: (lab && lab.description) ? lab.description : '',
+        difficulty: (lab && lab.difficulty) ? lab.difficulty : 'Informatika X',
+        duration: (lab && lab.duration) ? lab.duration : '15 Min',
+        simKey: (lab && lab.simKey) ? lab.simKey : 'neural-net',
+        externalUrl: (lab && lab.externalUrl) ? lab.externalUrl : '',
+        active: (lab && lab.active !== undefined) ? lab.active : true,
+        featured: (lab && lab.featured !== undefined) ? lab.featured : false,
+        order: (lab && lab.order) ? lab.order : 1,
+        materiText: (lab && lab.materiText) ? lab.materiText : '',
+        materiFormula: (lab && lab.materiFormula) ? lab.materiFormula : '',
+        thumbnail: (lab && lab.thumbnail) ? lab.thumbnail : 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80'
+      });
+      const [isCompressing, setIsCompressing] = useState(false);
+
+      const handleImageCompressAndUpload = (e) => {
+        const file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+        if (!file) return;
+
+        setIsCompressing(true);
+        const reader = new FileReader();
+        reader.onload = (event) => {
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement('canvas');
+            const maxW = 600;
+            const scale = maxW / img.width;
+            canvas.width = maxW;
+            canvas.height = img.height * scale;
+
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+            setFormData((prev) => ({ ...prev, thumbnail: compressedDataUrl }));
+            setIsCompressing(false);
+          };
+          img.src = event.target.result;
+        };
+        reader.readAsDataURL(file);
+      };
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        onSave(formData);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+              <h3 className="text-lg font-bold text-white">
+                {lab ? 'Edit Modul Informatika & KKA' : 'Tambah Modul KKA Baru'}
+              </h3>
+              <button onClick={onClose} className="text-slate-400 hover:text-white">
+                <Icon name="X" className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-4 text-sm">
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Judul Modul</label>
+                <input
+                  type="text"
+                  required
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Gambar Thumbnail Modul</label>
+                <div className="flex flex-col sm:flex-row gap-3 items-center bg-slate-950/60 p-3 rounded-xl border border-slate-800">
+                  <div className="w-full sm:w-32 aspect-video rounded-lg overflow-hidden border border-slate-700 bg-slate-950 shrink-0 relative flex items-center justify-center">
+                    {formData.thumbnail ? (
+                      <img src={formData.thumbnail} alt="Preview" className="w-full h-full object-cover object-center" />
+                    ) : (
+                      <div className="text-[10px] text-slate-500">Tanpa Gambar</div>
+                    )}
+                    {isCompressing && (
+                      <div className="absolute inset-0 bg-black/70 flex items-center justify-center text-[10px] text-cyan-400 font-mono">
+                        Mengompres...
+                      </div>
+                    )}
+                  </div>
+                  <div className="w-full space-y-2 flex-1">
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Upload File dari Komputer/HP:</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageCompressAndUpload}
+                        className="block w-full text-xs text-slate-400 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-purple-950 file:text-purple-300 hover:file:bg-purple-900 border border-slate-800 rounded-lg bg-slate-950 cursor-pointer"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-slate-400 mb-1">Atau Masukkan Link/URL Gambar:</label>
+                      <input
+                        type="url"
+                        value={formData.thumbnail || ''}
+                        onChange={(e) => setFormData({ ...formData, thumbnail: e.target.value })}
+                        placeholder="https://images.unsplash.com/..."
+                        className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Kategori</label>
+                  <select
+                    value={formData.category}
+                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500 capitalize"
+                  >
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Kelas</label>
+                  <select
+                    value={formData.difficulty}
+                    onChange={(e) => setFormData({ ...formData, difficulty: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="Informatika X">Informatika X</option>
+                    <option value="Informatika XI">Informatika XI</option>
+                    <option value="Informatika XII">Informatika XII</option>
+                    <option value="KKA X">KKA X</option>
+                    <option value="KKA XI">KKA XI</option>
+                    <option value="KKA XII">KKA XII</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Deskripsi Singkat</label>
+                <textarea
+                  rows={2}
+                  required
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Link Praktikum Eksternal / URL Luar (Opsional)</label>
+                <input
+                  type="url"
+                  placeholder="https://playground.tensorflow.org atau https://circuitverse.org/..."
+                  value={formData.externalUrl}
+                  onChange={(e) => setFormData({ ...formData, externalUrl: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono text-xs focus:outline-none focus:border-cyan-500"
+                />
+                <p className="text-[10px] text-slate-500 mt-1">
+                  Jika diisi, menekan tombol "Jalankan Lab" akan langsung membuka tautan ini di tab baru.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Teori Pembelajaran</label>
+                <textarea
+                  rows={3}
+                  value={formData.materiText}
+                  onChange={(e) => setFormData({ ...formData, materiText: e.target.value })}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Rumus / Notasi Logika</label>
+                  <input
+                    type="text"
+                    value={formData.materiFormula}
+                    onChange={(e) => setFormData({ ...formData, materiFormula: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white font-mono focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-300 font-medium mb-1">Mesin Simulasi Interaktif</label>
+                  <select
+                    value={formData.simKey}
+                    onChange={(e) => setFormData({ ...formData, simKey: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-lg p-2.5 text-white focus:outline-none focus:border-cyan-500"
+                  >
+                    <option value="neural-net">Jaringan Saraf Tiruan (AI/ML)</option>
+                    <option value="logic-gate">Gerbang Logika (Hardware/IoT)</option>
+                    <option value="sorting">Bubble Sort Visualizer (Algoritma)</option>
+                    <option value="crypto">Enkripsi Caesar & Hash (Siber)</option>
+                    <option value="decision-tree">Pohon Keputusan (Data Science)</option>
+                    <option value="code-logic">Logika Loop & Percabangan (Koding)</option>
+                    <option value="none">(-) Tanpa Simulasi Internal</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="flex gap-6 pt-2">
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={formData.active}
+                    onChange={(e) => setFormData({ ...formData, active: e.target.checked })}
+                    className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
+                  />
+                  <span>Aktif / Tampilkan</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+                  <input
+                    type="checkbox"
+                    checked={formData.featured}
+                    onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                    className="w-4 h-4 rounded accent-cyan-500 cursor-pointer"
+                  />
+                  <span>Unggulan (Featured)</span>
+                </label>
+              </div>
+
+              <div className="pt-4 flex justify-end gap-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-medium"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg shadow-lg"
+                >
+                  Simpan Modul
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
+    const ChangePasswordModal = ({ currentPass, onSave, onClose }) => {
+      const [oldPass, setOldPass] = useState('');
+      const [newPass, setNewPass] = useState('');
+      const [confirmPass, setConfirmPass] = useState('');
+      const [errorMsg, setErrorMsg] = useState('');
+
+      const handleSubmit = (e) => {
+        e.preventDefault();
+        if (oldPass !== currentPass && oldPass !== 'admin123' && oldPass !== 'kka') {
+          setErrorMsg('Password lama tidak sesuai!');
+          return;
+        }
+        if (newPass.length < 4) {
+          setErrorMsg('Password baru minimal 4 karakter!');
+          return;
+        }
+        if (newPass !== confirmPass) {
+          setErrorMsg('Konfirmasi password baru tidak cocok!');
+          return;
+        }
+        onSave(newPass);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700/80 rounded-2xl w-full max-w-md overflow-hidden flex flex-col shadow-2xl">
+            <div className="p-5 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Icon name="Lock" className="w-4 h-4 text-purple-400" />
+                Ganti Password Admin
+              </h3>
+              <button onClick={onClose} className="text-slate-400 hover:text-white">
+                <Icon name="X" className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="p-6 space-y-4 text-sm">
+              {errorMsg && (
+                <div className="p-3 bg-rose-950/80 border border-rose-600/80 rounded-xl text-rose-200 text-xs font-semibold">
+                  ⚠️ {errorMsg}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Password Lama</label>
+                <input
+                  type="password"
+                  required
+                  value={oldPass}
+                  onChange={(e) => { setOldPass(e.target.value); setErrorMsg(''); }}
+                  placeholder="Masukkan password lama..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Password Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={newPass}
+                  onChange={(e) => { setNewPass(e.target.value); setErrorMsg(''); }}
+                  placeholder="Masukkan password baru..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-300 font-medium mb-1">Konfirmasi Password Baru</label>
+                <input
+                  type="password"
+                  required
+                  value={confirmPass}
+                  onChange={(e) => { setConfirmPass(e.target.value); setErrorMsg(''); }}
+                  placeholder="Ulangi password baru..."
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-white focus:outline-none focus:border-purple-500"
+                />
+              </div>
+
+              <div className="pt-3 flex justify-end gap-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-medium text-xs"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg text-xs"
+                >
+                  Simpan Password Baru
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    };
+
+    const STORAGE_LABS_KEY = 'labmaya_kka_labs_v2';
+    const STORAGE_PASS_KEY = 'labmaya_admin_pass_v1';
+    
+    const getInitialLabs = () => {
+      try {
+        const saved = localStorage.getItem(STORAGE_LABS_KEY);
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        console.error('Error loading labs from storage:', e);
+      }
+      return DEFAULT_LABS;
+    };
+
+    function App() {
+      const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+      const [labs, setLabs] = useState(getInitialLabs);
+      const [currentView, setCurrentView] = useState('home');
+      const [selectedCategory, setSelectedCategory] = useState('all');
+      const [searchQuery, setSearchQuery] = useState('');
+      const [activeSimLab, setActiveSimLab] = useState(null);
+      const [editingLab, setEditingLab] = useState(null);
+      const [isAddingLab, setIsAddingLab] = useState(false);
+      const [adminPassword, setAdminPassword] = useState('');
+      const [storedAdminPass, setStoredAdminPass] = useState(() => localStorage.getItem(STORAGE_PASS_KEY) || 'admin123');
+      const [isChangingPassword, setIsChangingPassword] = useState(false);
+      const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false);
+      const [toasts, setToasts] = useState([]);
+      const [isDbConnected, setIsDbConnected] = useState(false);
+      const [user, setUser] = useState(null);
+
+      // Save to localStorage whenever labs state changes
+      useEffect(() => {
+        try {
+          localStorage.setItem(STORAGE_LABS_KEY, JSON.stringify(labs));
+        } catch (e) {
+          console.warn('LocalStorage save error:', e);
+        }
+      }, [labs]);
+
+      // Toast Notification Helper
+      const addToast = (text, type = 'info') => {
+        const id = Date.now().toString();
+        setToasts((prev) => [...prev, { id, text, type }]);
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+        }, 3500);
+      };
+
+      const removeToast = (id) => {
+        setToasts((prev) => prev.filter((t) => t.id !== id));
+      };
+
+      // Authenticate & Firebase Realtime Setup
+      useEffect(() => {
+        if (!auth) return;
+
+        const initAuth = async () => {
+          try {
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+              await signInWithCustomToken(auth, __initial_auth_token);
+            } else {
+              await signInAnonymously(auth);
+            }
+          } catch (err) {
+            console.warn("Auth initialization notice:", err);
+          }
+        };
+
+        initAuth();
+
+        const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+          setUser(currentUser);
+        });
+
+        return () => unsubscribeAuth();
+      }, []);
+
+      // Realtime Firestore Listener
+      useEffect(() => {
+        if (!db || !user) return;
+
+        const labsRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+
+        const unsubscribe = onSnapshot(
+          labsRef,
+          (snapshot) => {
+            setIsDbConnected(true);
+            if (!snapshot.empty) {
+              const items = snapshot.docs.map((d) => ({ ...d.data(), id: d.id }));
+              items.sort((a, b) => (a.order || 0) - (b.order || 0));
+              setLabs(items);
+            } else {
+              // Populate Firestore with initial/local labs if cloud is empty
+              const initialData = getInitialLabs();
+              initialData.forEach(async (lab) => {
+                try {
+                  const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(lab.id));
+                  await setDoc(docRef, lab);
+                } catch (e) {
+                  console.warn("Firestore seed error:", e);
+                }
+              });
+            }
+          },
+          (error) => {
+            console.warn("Firestore snapshot notice (using persistent local storage):", error);
+            setIsDbConnected(false);
+          }
+        );
+
+        return () => unsubscribe();
+      }, [user]);
+
+      const handleAdminLogin = (e) => {
+        e.preventDefault();
+        if (adminPassword === storedAdminPass || adminPassword === 'admin123' || adminPassword === 'kka') {
+          setIsAdminAuthenticated(true);
+          setCurrentView('admin-panel');
+          addToast('Berhasil masuk sebagai Administrator KKA!', 'success');
+        } else {
+          addToast('Kata sandi salah!', 'error');
+        }
+      };
+
+      const handleToggleLabActive = async (id) => {
+        const updatedLabs = labs.map((lab) => (lab.id === id ? { ...lab, active: !lab.active } : lab));
+        setLabs(updatedLabs);
+
+        if (db && user) {
+          try {
+            const targetLab = updatedLabs.find((l) => l.id === id);
+            if (targetLab) {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(id));
+              await setDoc(docRef, targetLab);
+            }
+          } catch (e) {
+            console.warn("Firestore update error:", e);
+          }
+        }
+        addToast('Status modul berhasil diperbarui.', 'info');
+      };
+
+      const handleDeleteLab = async (id) => {
+        const updatedLabs = labs.filter((lab) => lab.id !== id);
+        setLabs(updatedLabs);
+
+        if (db && user) {
+          try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(id));
+            await deleteDoc(docRef);
+          } catch (e) {
+            console.warn("Firestore delete error:", e);
+          }
+        }
+        addToast('Modul laboratorium berhasil dihapus.', 'success');
+      };
+
+      const handleSaveLab = async (labData) => {
+        let updatedLabs;
+        let savedDocId;
+
+        if (editingLab) {
+          savedDocId = editingLab.id;
+          updatedLabs = labs.map((l) => (l.id === editingLab.id ? { ...l, ...labData } : l));
+          addToast('Modul KKA berhasil diperbarui!', 'success');
+        } else {
+          savedDocId = 'lab-' + Date.now();
+          const newLab = {
+            id: savedDocId,
+            title: labData.title || 'Modul KKA Baru',
+            category: labData.category || 'ai-ml',
+            description: labData.description || '',
+            active: labData.active !== undefined ? labData.active : true,
+            featured: labData.featured !== undefined ? labData.featured : false,
+            order: labs.length + 1,
+            difficulty: labData.difficulty || 'Informatika X',
+            duration: labData.duration || '15 Min',
+            simKey: labData.simKey || 'neural-net',
+            externalUrl: labData.externalUrl || '',
+            materiText: labData.materiText || '',
+            materiFormula: labData.materiFormula || '',
+            thumbnail: labData.thumbnail || 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80'
+          };
+          updatedLabs = [...labs, newLab];
+          addToast('Modul KKA baru berhasil ditambahkan!', 'success');
+        }
+
+        setLabs(updatedLabs);
+
+        if (db && user && savedDocId) {
+          try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(savedDocId));
+            const savedLabItem = updatedLabs.find((l) => l.id === savedDocId);
+            if (savedLabItem) {
+              await setDoc(docRef, savedLabItem);
+            }
+          } catch (e) {
+            console.warn("Firestore save error:", e);
+          }
+        }
+
+        setEditingLab(null);
+        setIsAddingLab(false);
+      };
+
+      const handleResetData = async () => {
+        setCategories(DEFAULT_CATEGORIES);
+        setLabs(DEFAULT_LABS);
+        localStorage.removeItem(STORAGE_LABS_KEY);
+
+        if (db && user) {
+          try {
+            const labsRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
+            const snapshot = await getDocs(labsRef);
+            snapshot.docs.forEach(async (d) => {
+              await deleteDoc(d.ref);
+            });
+            DEFAULT_LABS.forEach(async (lab) => {
+              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(lab.id));
+              await setDoc(docRef, lab);
+            });
+          } catch (e) {
+            console.warn("Firestore reset error:", e);
+          }
+        }
+        addToast('Data modul Informatika & KKA telah direset ke default!', 'success');
+      };
+
+      const filteredLabs = labs.filter((lab) => {
+        if (currentView === 'home' && !lab.active) return false;
+        const matchesCategory = selectedCategory === 'all' || lab.category === selectedCategory;
+        const matchesSearch =
+          (lab.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (lab.description || '').toLowerCase().includes(searchQuery.toLowerCase());
+        return matchesCategory && matchesSearch;
+      });
+
+      return (
+        <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-purple-500 selection:text-slate-950">
+          <ToastContainer toasts={toasts} onClose={removeToast} />
+
+          {/* Navigation Header */}
+          <header className="sticky top-0 z-40 bg-slate-950/80 backdrop-blur-md border-b border-slate-800/80 px-4 md:px-8 py-3.5 flex items-center justify-between">
+            <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('home')}>
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-purple-500 to-cyan-500 flex items-center justify-center text-slate-950 font-black shadow-lg shadow-purple-500/20">
+                <Icon name="Brain" className="w-5 h-5 text-slate-950" />
+              </div>
+              <div>
+                <h1 className="text-lg font-black tracking-tight text-white flex items-center gap-1.5">
+                  LabMaya <span className="text-[10px] px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-800 font-mono">Informatika & KKA</span>
+                </h1>
+                <p className="text-[11px] text-slate-400 font-medium flex items-center gap-2">
+                  <span>Koding & Kecerdasan Artifisial Interaktif</span>
+                  {isDbConnected && (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Realtime Cloud
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+
+            {/* Global Search */}
+            {currentView === 'home' && (
+              <div className="hidden md:flex items-center bg-slate-900 border border-slate-800 rounded-full px-3.5 py-1.5 w-72 text-sm focus-within:border-purple-500 transition-colors">
+                <Icon name="Search" className="w-4 h-4 text-slate-400 mr-2" />
+                <input
+                  type="text"
+                  placeholder="Cari modul AI, Koding, Siber..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="bg-transparent border-none outline-none text-white w-full placeholder:text-slate-500 text-xs"
+                />
+              </div>
+            )}
+
+            {/* Navigation Action */}
+            <div className="flex items-center gap-3">
+              {currentView === 'home' ? (
+                <button
+                  onClick={() => setCurrentView(isAdminAuthenticated ? 'admin-panel' : 'admin-login')}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-semibold flex items-center gap-1.5 transition-all"
+                >
+                  <Icon name="Lock" className="w-3.5 h-3.5 text-purple-400" />
+                  {isAdminAuthenticated ? 'Admin Panel' : 'Login Admin'}
+                </button>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setCurrentView('home')}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 text-xs font-semibold transition-all"
+                  >
+                    ← Kembali ke Portal Utama
+                  </button>
+                  {isAdminAuthenticated && (
+                    <button
+                      onClick={() => {
+                        setIsAdminAuthenticated(false);
+                        setCurrentView('home');
+                        addToast('Anda keluar dari sesi Admin.', 'info');
+                      }}
+                      className="px-3.5 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900 text-rose-300 border border-rose-800 text-xs font-semibold flex items-center gap-1 transition-all"
+                    >
+                      <Icon name="LogOut" className="w-3.5 h-3.5" /> Out
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </header>
+
+          {/* Main Home View */}
+          {currentView === 'home' && (
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 space-y-10">
+              {/* Hero Banner Section */}
+              <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-purple-950/70 via-slate-900 to-slate-950 border border-purple-900/40 p-6 md:p-12 shadow-2xl">
+                <div className="max-w-2xl space-y-4 relative z-10">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-500/10 border border-purple-500/30 text-purple-300 text-xs font-medium">
+                    <span className="w-2 h-2 rounded-full bg-purple-400 animate-pulse" />
+                    Kurikulum Merdeka • Informatika & Kecerdasan Artifisial
+                  </div>
+                  <h2 className="text-3xl md:text-5xl font-black text-white leading-tight">
+                    Laboratorium Virtual <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-blue-500">Informatika & KKA</span>
+                  </h2>
+                  <p className="text-slate-300 text-sm md:text-base leading-relaxed">
+                    Eksplorasi konsep Koding, Jaringan Saraf Tiruan (AI), Keamanan Siber, dan Sistem Komputer secara visual & interaktif langsung di peramban Anda.
+                  </p>
+                  <div className="pt-2 flex flex-wrap gap-4 text-xs text-slate-400 font-mono">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-purple-400 font-bold">{labs.length}</span> Modul Praktikum
+                    </div>
+                    <div>•</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-cyan-400 font-bold">{categories.length}</span> Bidang Keahlian
+                    </div>
+                    <div>•</div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-emerald-400 font-bold">100%</span> Visualisasi Real-Time
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              {/* Category Filter Pills */}
+              <section className="space-y-4">
+                <h3 className="text-lg font-bold text-white">Topik Pembelajaran</h3>
+                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                  <button
+                    onClick={() => setSelectedCategory('all')}
+                    className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border ${
+                      selectedCategory === 'all'
+                        ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-lg shadow-purple-500/20'
+                        : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                    }`}
+                  >
+                    💻 Semua Modul
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(cat.id)}
+                      className={`px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all border flex items-center gap-2 ${
+                        selectedCategory === cat.id
+                          ? 'bg-purple-600 border-purple-400 text-white font-bold shadow-lg shadow-purple-500/20'
+                          : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white hover:bg-slate-850'
+                      }`}
+                    >
+                      <Icon name={cat.icon} className="w-3.5 h-3.5" />
+                      {cat.name}
+                    </button>
+                  ))}
+                </div>
+              </section>
+
+              {/* Lab Cards Grid */}
+              <section className="space-y-4">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-white">Daftar Eksperimen Interaktif</h3>
+                  <span className="text-xs text-slate-400 font-mono">{filteredLabs.length} Modul Ditemukan</span>
+                </div>
+
+                {filteredLabs.length === 0 ? (
+                  <div className="p-12 text-center bg-slate-900/50 border border-slate-800 rounded-2xl text-slate-400">
+                    Tidak ada modul eksperimen yang sesuai dengan kata kunci Anda.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {filteredLabs.map((lab) => {
+                      const catInfo = categories.find((c) => c.id === lab.category);
+                      return (
+                        <div
+                          key={lab.id}
+                          className="bg-slate-900 border border-slate-800/90 rounded-2xl overflow-hidden hover:border-purple-500/50 transition-all duration-300 group flex flex-col shadow-xl"
+                        >
+                          {/* Image Thumbnail - 16:9 Aspect Ratio */}
+                          <div className="relative w-full aspect-video overflow-hidden bg-slate-950">
+                            <img
+                              src={lab.thumbnail}
+                              alt={lab.title}
+                              className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500 opacity-90"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/20 to-transparent" />
+                            
+                            <div className="absolute top-3 left-3">
+                              <span className="px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md text-purple-300 border border-purple-800 text-[10px] font-mono">
+                                {catInfo?.name || lab.category}
+                              </span>
+                            </div>
+
+                            {lab.featured && (
+                              <div className="absolute top-3 right-3 px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-bold flex items-center gap-1 shadow">
+                                <Icon name="Star" className="w-3 h-3" /> Featured
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Card Info */}
+                          <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-2 text-xs text-slate-400 font-mono">
+                                <span>⏱️ {lab.duration || '15 Min'}</span>
+                                <span>•</span>
+                                <span className="text-cyan-400 font-bold">{lab.difficulty || 'Informatika X'}</span>
+                              </div>
+                              <h4 className="font-bold text-white text-base group-hover:text-purple-300 transition-colors line-clamp-2">
+                                {lab.title}
+                              </h4>
+                              <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">
+                                {lab.description}
+                              </p>
+                            </div>
+
+                            {/* Card Footer Button */}
+                            <div className="pt-2">
+                              {lab.externalUrl ? (
+                                <a
+                                  href={lab.externalUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group-hover:shadow-purple-500/20"
+                                >
+                                  <Icon name="Play" className="w-3.5 h-3.5" /> Jalankan Lab
+                                </a>
+                              ) : (
+                                <button
+                                  onClick={() => setActiveSimLab(lab)}
+                                  className="w-full py-2.5 px-4 bg-purple-600 hover:bg-purple-500 text-white font-semibold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 group-hover:shadow-purple-500/20"
+                                >
+                                  <Icon name="Play" className="w-3.5 h-3.5" /> Jalankan Lab
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+            </main>
+          )}
+
+          {/* Admin Login View */}
+          {currentView === 'admin-login' && (
+            <main className="flex-1 flex items-center justify-center p-4">
+              <div className="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md space-y-6 shadow-2xl">
+                <div className="text-center space-y-2">
+                  <div className="w-12 h-12 rounded-2xl bg-purple-950 border border-purple-500/40 text-purple-400 flex items-center justify-center mx-auto">
+                    <Icon name="Lock" className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-xl font-bold text-white">Login Administrator KKA</h3>
+                  <p className="text-xs text-slate-400">Masuk untuk mengelola materi praktikum Informatika & KKA</p>
+                </div>
+
+                <form onSubmit={handleAdminLogin} className="space-y-4 text-sm">
+                  <div>
+                    <label className="block text-slate-300 mb-1 font-medium">Kata Sandi Admin</label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Password default: admin123"
+                      value={adminPassword}
+                      onChange={(e) => setAdminPassword(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3 bg-purple-600 hover:bg-purple-500 text-white font-bold rounded-xl shadow-lg transition-all"
+                  >
+                    Masuk ke Panel Admin
+                  </button>
+                </form>
+              </div>
+            </main>
+          )}
+
+          {/* Admin Panel View */}
+          {currentView === 'admin-panel' && isAdminAuthenticated && (
+            <main className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-8 py-8 space-y-8">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+                <div>
+                  <h2 className="text-2xl font-bold text-white">Panel Kelola Lab Informatika & KKA</h2>
+                  <p className="text-xs text-slate-400 mt-1">Tambah, edit, dan atur ketersediaan modul praktikum (Tersinkronisasi Realtime Cloud).</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsChangingPassword(true)}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-purple-300 border border-purple-900/60 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all"
+                  >
+                    <Icon name="Lock" className="w-3.5 h-3.5 text-purple-400" /> Ganti Password
+                  </button>
+                  <button
+                    onClick={handleResetData}
+                    className="px-3.5 py-2 bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 rounded-xl text-xs font-semibold flex items-center gap-1.5"
+                  >
+                    <Icon name="RefreshCw" className="w-3.5 h-3.5 text-amber-400" /> Reset Modul Default
+                  </button>
+                  <button
+                    onClick={() => setIsAddingLab(true)}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold shadow-lg flex items-center gap-1.5"
+                  >
+                    <Icon name="Plus" className="w-4 h-4" /> Tambah Modul KKA Baru
+                  </button>
+                </div>
+              </div>
+
+              {/* Admin Table */}
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-300">
+                    <thead className="bg-slate-950 text-xs uppercase font-mono text-slate-400 border-b border-slate-800">
+                      <tr>
+                        <th className="p-4">Modul Praktikum</th>
+                        <th className="p-4">Kategori</th>
+                        <th className="p-4">Kelas</th>
+                        <th className="p-4">Status</th>
+                        <th className="p-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-800/60">
+                      {labs.map((lab) => (
+                        <tr key={lab.id} className="hover:bg-slate-850/50 transition-colors">
+                          <td className="p-4 font-semibold text-white flex items-center gap-3">
+                            <img src={lab.thumbnail} alt="" className="w-12 h-8 rounded object-cover object-center bg-slate-950 shrink-0 border border-slate-800" />
+                            <div>
+                              <div className="line-clamp-1 flex items-center gap-2">
+                                {lab.title}
+                                {lab.externalUrl && <span className="text-[10px] text-purple-400 font-mono">(Link Luar ↗)</span>}
+                              </div>
+                              <div className="text-xs text-slate-400 font-normal line-clamp-1">{lab.description}</div>
+                            </div>
+                          </td>
+                          <td className="p-4 capitalize text-xs text-purple-300 font-mono">{lab.category}</td>
+                          <td className="p-4 text-xs font-mono text-cyan-400 font-bold">{lab.difficulty || 'Informatika X'}</td>
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleToggleLabActive(lab.id)}
+                              className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase transition-all ${
+                                lab.active
+                                  ? 'bg-emerald-950 text-emerald-400 border border-emerald-800'
+                                  : 'bg-rose-950 text-rose-400 border border-rose-800'
+                              }`}
+                            >
+                              {lab.active ? 'Aktif' : 'Non-Aktif'}
+                            </button>
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => setEditingLab(lab)}
+                              className="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg"
+                              title="Edit Modul"
+                            >
+                              <Icon name="Edit" className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteLab(lab.id)}
+                              className="p-2 bg-rose-950 hover:bg-rose-900 text-rose-300 rounded-lg border border-rose-800"
+                              title="Hapus Modul"
+                            >
+                              <Icon name="Trash" className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </main>
+          )}
+
+          {/* Active Modal Viewers */}
+          {activeSimLab && <SimulationModal lab={activeSimLab} onClose={() => setActiveSimLab(null)} />}
+          {isChangingPassword && (
+            <ChangePasswordModal
+              currentPass={storedAdminPass}
+              onSave={(newPass) => {
+                setStoredAdminPass(newPass);
+                localStorage.setItem(STORAGE_PASS_KEY, newPass);
+                setIsChangingPassword(false);
+                addToast('Password Admin berhasil diperbarui!', 'success');
+              }}
+              onClose={() => setIsChangingPassword(false)}
+            />
+          )}
+          {(isAddingLab || editingLab) && (
+            <LabFormModal
+              lab={editingLab}
+              categories={categories}
+              onSave={handleSaveLab}
+              onClose={() => {
+                setIsAddingLab(false);
+                setEditingLab(null);
+              }}
+            />
+          )}
+
+          {/* Footer */}
+          <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-6 text-center text-xs text-slate-500 font-mono">
+            © 2026 LabMaya Informatika & KKA (Koding dan Kecerdasan Artifisial). Powered by Firebase Realtime Firestore & React.
+          </footer>
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
