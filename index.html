@@ -1445,7 +1445,7 @@
 
       const handleSubmit = (e) => {
         e.preventDefault();
-        if (oldPass !== currentPass && oldPass !== && oldPass !== 'kka') {
+        if (oldPass !== currentPass && oldPass !== 'admin123' && oldPass !== 'kka') {
           setErrorMsg('Password lama tidak sesuai!');
           return;
         }
@@ -2017,7 +2017,7 @@
                     <input
                       type="password"
                       required
-                      placeholder=
+              
                       value={adminPassword}
                       onChange={(e) => setAdminPassword(e.target.value)}
                       className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-white focus:outline-none focus:border-purple-500"
