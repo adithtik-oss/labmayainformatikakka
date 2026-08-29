@@ -1629,8 +1629,8 @@
               items.sort((a, b) => (a.order || 0) - (b.order || 0));
               setLabs(items);
             } else {
-              // Populate Firestore with initial/local labs if cloud is empty
-              const initialData = getInitialLabs();
+              // Seed initial default labs to Firestore if empty
+              const initialData = DEFAULT_LABS;
               initialData.forEach(async (lab) => {
                 try {
                   const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(lab.id));
@@ -1642,7 +1642,7 @@
             }
           },
           (error) => {
-            console.warn("Firestore snapshot notice (using persistent local storage):", error);
+            console.warn("Firestore snapshot error (falling back to local memory):", error);
             setIsDbConnected(false);
           }
         );
@@ -1662,49 +1662,52 @@
       };
 
       const handleToggleLabActive = async (id) => {
-        const updatedLabs = labs.map((lab) => (lab.id === id ? { ...lab, active: !lab.active } : lab));
-        setLabs(updatedLabs);
+        const targetLab = labs.find((lab) => lab.id === id);
+        if (!targetLab) return;
 
-        if (db && user) {
-          try {
-            const targetLab = updatedLabs.find((l) => l.id === id);
-            if (targetLab) {
-              const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(id));
-              await setDoc(docRef, targetLab);
-            }
-          } catch (e) {
-            console.warn("Firestore update error:", e);
-          }
-        }
-        addToast('Status modul berhasil diperbarui.', 'info');
-      };
-
-      const handleDeleteLab = async (id) => {
-        const updatedLabs = labs.filter((lab) => lab.id !== id);
-        setLabs(updatedLabs);
+        const updatedLab = { ...targetLab, active: !targetLab.active };
 
         if (db && user) {
           try {
             const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(id));
-            await deleteDoc(docRef);
+            await setDoc(docRef, updatedLab, { merge: true });
+            addToast('Status modul diperbarui di Firebase Realtime!', 'info');
           } catch (e) {
-            console.warn("Firestore delete error:", e);
+            console.error("Firestore update error:", e);
+            addToast('Gagal memperbarui database.', 'error');
           }
+        } else {
+          setLabs(labs.map((l) => (l.id === id ? updatedLab : l)));
+          addToast('Status modul diperbarui lokal.', 'info');
         }
-        addToast('Modul laboratorium berhasil dihapus.', 'success');
+      };
+
+      const handleDeleteLab = async (id) => {
+        if (db && user) {
+          try {
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(id));
+            await deleteDoc(docRef);
+            addToast('Modul dihapus dari Firebase Realtime Database!', 'success');
+          } catch (e) {
+            console.error("Firestore delete error:", e);
+            addToast('Gagal menghapus dari database.', 'error');
+          }
+        } else {
+          setLabs(labs.filter((lab) => lab.id !== id));
+          addToast('Modul laboratorium dihapus.', 'success');
+        }
       };
 
       const handleSaveLab = async (labData) => {
-        let updatedLabs;
         let savedDocId;
+        let labToSave;
 
         if (editingLab) {
-          savedDocId = editingLab.id;
-          updatedLabs = labs.map((l) => (l.id === editingLab.id ? { ...l, ...labData } : l));
-          addToast('Modul KKA berhasil diperbarui!', 'success');
+          savedDocId = String(editingLab.id);
+          labToSave = { ...editingLab, ...labData };
         } else {
           savedDocId = 'lab-' + Date.now();
-          const newLab = {
+          labToSave = {
             id: savedDocId,
             title: labData.title || 'Modul KKA Baru',
             category: labData.category || 'ai-ml',
@@ -1720,22 +1723,24 @@
             materiFormula: labData.materiFormula || '',
             thumbnail: labData.thumbnail || 'https://images.unsplash.com/photo-1677442136019-21780efad99a?auto=format&fit=crop&w=600&q=80'
           };
-          updatedLabs = [...labs, newLab];
-          addToast('Modul KKA baru berhasil ditambahkan!', 'success');
         }
 
-        setLabs(updatedLabs);
-
-        if (db && user && savedDocId) {
+        if (db && user) {
           try {
-            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(savedDocId));
-            const savedLabItem = updatedLabs.find((l) => l.id === savedDocId);
-            if (savedLabItem) {
-              await setDoc(docRef, savedLabItem);
-            }
+            const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', savedDocId);
+            await setDoc(docRef, labToSave, { merge: true });
+            addToast('Modul tersimpan ke Firebase Realtime Database!', 'success');
           } catch (e) {
-            console.warn("Firestore save error:", e);
+            console.error("Firestore save error:", e);
+            addToast('Gagal menyimpan ke cloud database.', 'error');
           }
+        } else {
+          if (editingLab) {
+            setLabs(labs.map((l) => (l.id === editingLab.id ? labToSave : l)));
+          } else {
+            setLabs([...labs, labToSave]);
+          }
+          addToast('Modul tersimpan di memori browser!', 'success');
         }
 
         setEditingLab(null);
@@ -1751,18 +1756,20 @@
           try {
             const labsRef = collection(db, 'artifacts', appId, 'public', 'data', 'labs');
             const snapshot = await getDocs(labsRef);
-            snapshot.docs.forEach(async (d) => {
+            for (const d of snapshot.docs) {
               await deleteDoc(d.ref);
-            });
-            DEFAULT_LABS.forEach(async (lab) => {
+            }
+            for (const lab of DEFAULT_LABS) {
               const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'labs', String(lab.id));
               await setDoc(docRef, lab);
-            });
+            }
+            addToast('Firebase Database berhasil direset ke modul default!', 'success');
           } catch (e) {
-            console.warn("Firestore reset error:", e);
+            console.error("Firestore reset error:", e);
           }
+        } else {
+          addToast('Data modul direset ke default!', 'success');
         }
-        addToast('Data modul Informatika & KKA telah direset ke default!', 'success');
       };
 
       const filteredLabs = labs.filter((lab) => {
@@ -1790,9 +1797,13 @@
                 </h1>
                 <p className="text-[11px] text-slate-400 font-medium flex items-center gap-2">
                   <span>Koding & Kecerdasan Artifisial Interaktif</span>
-                  {isDbConnected && (
+                  {isDbConnected ? (
                     <span className="inline-flex items-center gap-1 text-[9px] font-mono text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Realtime Cloud
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" /> Firebase Realtime
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 text-[9px] font-mono text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">
+                      Mode Lokal
                     </span>
                   )}
                 </p>
@@ -2159,7 +2170,7 @@
 
           {/* Footer */}
           <footer className="border-t border-slate-800/80 bg-slate-950 px-4 py-6 text-center text-xs text-slate-500 font-mono">
-            © 2026 LabMaya Informatika & KKA (Koding dan Kecerdasan Artifisial).
+            © 2026 LabMaya Informatika & KKA. Connected to Firebase Realtime Firestore & React.
           </footer>
         </div>
       );
